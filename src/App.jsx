@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || "http://127.0.0.1:5173";
@@ -27,7 +28,12 @@ const STORAGE_KEYS = {
   accessToken: "trueshuffle_access_token",
   refreshToken: "trueshuffle_refresh_token",
   expiresAt: "trueshuffle_expires_at",
+  authRedirectUri: "trueshuffle_auth_redirect_uri",
 };
+
+function isTauriDesktop() {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
 
 function generateRandomString(length) {
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -92,7 +98,7 @@ async function waitForBrowserDevice(accessToken, deviceId, retries = 10, delayMs
   return null;
 }
 
-async function exchangeCodeForToken(code) {
+async function exchangeCodeForToken(code, redirectUri = localStorage.getItem(STORAGE_KEYS.authRedirectUri) || REDIRECT_URI) {
   const verifier = localStorage.getItem(STORAGE_KEYS.verifier);
   if (!verifier) {
     throw new Error("Missing PKCE verifier. Start login again.");
@@ -102,7 +108,7 @@ async function exchangeCodeForToken(code) {
     client_id: CLIENT_ID,
     grant_type: "authorization_code",
     code,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: redirectUri,
     code_verifier: verifier,
   });
 
@@ -175,6 +181,42 @@ async function beginLogin() {
   const verifier = generateRandomString(64);
   const challenge = await createCodeChallenge(verifier);
   localStorage.setItem(STORAGE_KEYS.verifier, verifier);
+
+  if (isTauriDesktop()) {
+    const { redirectUri } = await invoke("start_spotify_auth_server");
+    localStorage.setItem(STORAGE_KEYS.authRedirectUri, redirectUri);
+
+    const url = new URL(AUTH_ENDPOINT);
+    url.search = new URLSearchParams({
+      client_id: CLIENT_ID,
+      response_type: "code",
+      redirect_uri: redirectUri,
+      code_challenge_method: "S256",
+      code_challenge: challenge,
+      scope: SCOPES.join(" "),
+    }).toString();
+
+    await invoke("open_external_url", { url: url.toString() });
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 180_000) {
+      const result = await invoke("poll_spotify_auth_result");
+      if (result?.error) {
+        throw new Error(`Spotify login failed: ${result.error}`);
+      }
+
+      if (result?.code) {
+        const tokenData = await exchangeCodeForToken(result.code, redirectUri);
+        const token = storeTokenResponse(tokenData);
+        localStorage.removeItem(STORAGE_KEYS.authRedirectUri);
+        return token;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 700));
+    }
+
+    throw new Error("Spotify login timed out. Please try again.");
+  }
 
   const url = new URL(AUTH_ENDPOINT);
   url.search = new URLSearchParams({
@@ -429,6 +471,7 @@ function App() {
   const monitorRef = useRef(null);
   const handoffInProgressRef = useRef(false);
   const currentQueueRef = useRef([]);
+  const authExchangeInFlightRef = useRef(false);
   const pendingRestoreRef = useRef(null);
   const hasAttemptedPlaybackRestoreRef = useRef(false);
   const hasHydratedPlaylistStateRef = useRef(false);
@@ -454,6 +497,19 @@ function App() {
   const [isPlaylistLoading, setIsPlaylistLoading] = useState(false);
   const [isRestoringSession, setIsRestoringSession] = useState(false);
 
+  async function handleLogin() {
+    try {
+      setStatus(isTauriDesktop() ? "Opening Spotify in your browser..." : "Redirecting to Spotify...");
+      const token = await beginLogin();
+      if (token) {
+        setAccessToken(token);
+        setStatus("Spotify login complete.");
+      }
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   useEffect(() => {
     currentQueueRef.current = currentQueue;
   }, [currentQueue]);
@@ -472,6 +528,11 @@ function App() {
         }
 
         if (code) {
+          if (authExchangeInFlightRef.current) {
+            return;
+          }
+
+          authExchangeInFlightRef.current = true;
           const tokenData = await exchangeCodeForToken(code);
           const token = storeTokenResponse(tokenData);
           if (!cancelled) {
@@ -493,6 +554,8 @@ function App() {
         if (!cancelled) {
           setStatus(error.message);
         }
+      } finally {
+        authExchangeInFlightRef.current = false;
       }
     }
 
@@ -1203,7 +1266,7 @@ function App() {
                       </>
                     ) : (
                       <button
-                        onClick={() => beginLogin().catch((error) => setStatus(error.message))}
+                        onClick={handleLogin}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-semibold text-[#051209] transition hover:bg-emerald-400"
                       >
                         <IconSpotify />
@@ -1230,7 +1293,7 @@ function App() {
                 Launch the browser-native TrueShuffle player with Spotify’s Web Playback SDK.
               </p>
               <button
-                onClick={() => beginLogin().catch((error) => setStatus(error.message))}
+                onClick={handleLogin}
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-bold text-[#041108] shadow-[0_18px_40px_rgba(29,185,84,0.18)] transition hover:translate-y-[-1px] hover:bg-emerald-400"
               >
                 <IconSpotify />

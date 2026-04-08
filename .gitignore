@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+.env.local
+.env
+.vite/
+
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/android/
+src-tauri/icons/ios/
+src-tauri/icons/icon.iconset/
