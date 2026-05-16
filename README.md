@@ -1,5 +1,7 @@
 # TrueShuffle
 
+> **Note:** As of May 15, 2025, Spotify restricts third-party app access to verified organizations only (250k+ MAU minimum). TrueShuffle cannot be made publicly available due to this policy change. The app is fully functional but limited to manually allowlisted Spotify accounts.
+
 TrueShuffle is a Spotify player that actually shuffles your music.
 
 Spotify's built-in shuffle clusters songs, repeats artists, and plays the same tracks session after session. TrueShuffle replaces it with a burst-based queue that tracks what you've recently heard and makes sure it doesn't come back for a while.

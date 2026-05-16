@@ -1,23 +1,13 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  ArrowRight,
   AudioLines,
-  CalendarDays,
   Check,
   Clock3,
   Disc3,
-  LockKeyhole,
   Shuffle,
-  SlidersHorizontal,
   Sparkles,
-  Users,
   Waves,
-  X,
 } from "lucide-react";
-import { useState } from "react";
-
-const testerEmail = "viditjain2005@gmail.com";
-const demoEndpoint = `https://formsubmit.co/ajax/${testerEmail}`;
 
 const featureCards = [
   {
@@ -103,162 +93,7 @@ function TrueShuffleMark({ className = "h-14 w-14" }) {
   );
 }
 
-function DemoModal({ open, onClose }) {
-  const [formState, setFormState] = useState({
-    name: "",
-    email: "",
-    spotifyEmail: "",
-    useCase: "",
-    why: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState("");
-
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setSubmitted(false);
-    setSubmitError("");
-    setFormState((current) => ({ ...current, [name]: value }));
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setSubmitError("");
-
-    try {
-      const response = await fetch(demoEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          _subject: "TrueShuffle demo request",
-          _captcha: "false",
-          name: formState.name,
-          email: formState.email,
-          spotify_account_email: formState.spotifyEmail,
-          listening_style: formState.useCase || "-",
-          shuffle_goal: formState.why || "-",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Request failed");
-      }
-
-      setSubmittedEmail(formState.email);
-      setSubmitted(true);
-      setFormState({
-        name: "",
-        email: "",
-        spotifyEmail: "",
-        useCase: "",
-        why: "",
-      });
-    } catch {
-      setSubmitError("Something went wrong while sending your request. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div className="signup-shell" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <motion.div className="signup-backdrop" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-          <motion.div
-            className="signup-modal"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.98 }}
-            transition={{ duration: 0.24 }}
-          >
-            <button className="icon-button close-button" onClick={onClose} aria-label="Close demo form">
-              <X size={18} />
-            </button>
-
-            <div className="signup-header">
-              <div className="eyebrow">Book A Demo</div>
-              <h3>Tell us a little about your listening style</h3>
-              <p>
-                Fill this out and we&apos;ll receive your request directly. We&apos;ll use it to follow up
-                and coordinate early access.
-              </p>
-            </div>
-
-            <form className="signup-grid" onSubmit={handleSubmit}>
-              <label>
-                Name
-                <input name="name" value={formState.name} onChange={handleChange} placeholder="Alex Chen" required />
-              </label>
-              <label>
-                Contact email
-                <input name="email" type="email" value={formState.email} onChange={handleChange} placeholder="alex@email.com" required />
-              </label>
-              <label>
-                Spotify account email
-                <input
-                  name="spotifyEmail"
-                  type="email"
-                  value={formState.spotifyEmail}
-                  onChange={handleChange}
-                  placeholder="The Spotify account you want to use with TrueShuffle"
-                  required
-                />
-              </label>
-              <label>
-                Listening style
-                <input
-                  name="useCase"
-                  value={formState.useCase}
-                  onChange={handleChange}
-                  placeholder="Gym playlists, deep house, Bollywood, long-focus work sessions..."
-                />
-              </label>
-              <label className="full-span">
-                What kind of shuffle experience are you looking for?
-                <textarea
-                  name="why"
-                  value={formState.why}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Tell us what frustrates you about Spotify shuffle, what kind of playlists you use most, or why TrueShuffle caught your attention."
-                />
-              </label>
-
-              <div className="signup-actions full-span">
-                <button className="secondary-button" type="button" onClick={onClose}>
-                  Close
-                </button>
-                <button className="primary-button" type="submit" disabled={isSubmitting}>
-                  <CalendarDays size={18} />
-                  {isSubmitting ? "Submitting..." : "Submit"}
-                </button>
-              </div>
-
-              {submitted ? (
-                <div className="signup-success full-span">
-                  Your request was sent successfully. We&apos;ll reach out at <strong>{submittedEmail || "your email"}</strong> with the instructions.
-                </div>
-              ) : null}
-
-              {submitError ? <div className="signup-error full-span">{submitError}</div> : null}
-            </form>
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
 export default function App() {
-  const [modalOpen, setModalOpen] = useState(false);
-
   return (
     <div className="site-shell">
       <div className="ambient ambient-left" />
@@ -278,14 +113,7 @@ export default function App() {
           <a href="#why">Why TrueShuffle</a>
           <a href="#features">Features</a>
           <a href="#future">Future</a>
-          <a href="./pricing.html">Pricing</a>
-          <a href="./coming-soon.html">Coming Soon</a>
         </nav>
-
-        <button className="primary-button top-cta" onClick={() => setModalOpen(true)}>
-          <CalendarDays size={18} />
-          Book a demo
-        </button>
       </header>
 
       <main id="top">
@@ -307,13 +135,6 @@ export default function App() {
               makes every session feel less predictable without becoming chaotic.
             </p>
 
-            <div className="hero-actions">
-              <a className="secondary-button" href="#future">
-                Explore future vision
-                <ArrowRight size={18} />
-              </a>
-            </div>
-
             <div className="mini-stats">
               <div>
                 <strong>5-song bursts</strong>
@@ -324,9 +145,13 @@ export default function App() {
                 <span>favorite tracks come back later, not immediately</span>
               </div>
               <div>
-                <strong>$1/month</strong>
-                <span>a tiny upgrade for people who care how shuffle feels</span>
+                <strong>Zero backend</strong>
+                <span>auth runs entirely client-side using Spotify's PKCE flow</span>
               </div>
+            </div>
+
+            <div className="spotify-notice">
+              <strong>Note:</strong> As of May 15, 2025, Spotify restricts third-party app access to verified organizations only. TrueShuffle cannot be made publicly available due to this policy change. The source code and technical writeup are available on GitHub.
             </div>
           </motion.div>
 
@@ -517,52 +342,6 @@ export default function App() {
             ))}
           </div>
 
-          <div className="future-footer">
-            <a className="secondary-button" href="./pricing.html">
-              See pricing
-              <ArrowRight size={18} />
-            </a>
-          </div>
-        </section>
-
-        <section className="tester-panel" id="demo">
-          <motion.div
-            className="tester-content"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.25 }}
-          >
-            <div className="tester-copy">
-              <div className="eyebrow">Book a demo</div>
-              <h2>Want to try TrueShuffle with your own playlists?</h2>
-              <p>
-                If the product feels right for you, request a demo and share the Spotify account you want
-                connected. We are rolling access out carefully while the app is still in early release.
-              </p>
-            </div>
-
-            <div className="tester-side">
-              <div className="tester-perks">
-                <div>
-                  <Users size={18} />
-                  Best for heavy playlist listeners
-                </div>
-                <div>
-                  <SlidersHorizontal size={18} />
-                  Help shape the product roadmap
-                </div>
-                <div>
-                  <LockKeyhole size={18} />
-                  Early access while rollout stays curated
-                </div>
-              </div>
-
-              <button className="primary-button" onClick={() => setModalOpen(true)}>
-                <CalendarDays size={18} />
-                Request access
-              </button>
-            </div>
-          </motion.div>
         </section>
       </main>
 
@@ -576,11 +355,10 @@ export default function App() {
         </div>
 
         <div className="footer-note">
-          <a href="./pricing.html">View pricing</a> and book a demo if you want early access.
+          Public access unavailable due to Spotify's May 2025 developer policy change.
         </div>
       </footer>
 
-      <DemoModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }
