@@ -1,6 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+async function invoke(cmd, args) {
+  const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
+  return tauriInvoke(cmd, args);
+}
 
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || "http://127.0.0.1:5173";
@@ -466,6 +469,7 @@ function Equalizer({ active }) {
   );
 }
 
+// Main app component
 function App() {
   const playerRef = useRef(null);
   const monitorRef = useRef(null);
@@ -535,10 +539,8 @@ function App() {
           authExchangeInFlightRef.current = true;
           const tokenData = await exchangeCodeForToken(code);
           const token = storeTokenResponse(tokenData);
-          if (!cancelled) {
-            setAccessToken(token);
-            setStatus("Spotify login complete.");
-          }
+          setAccessToken(token);
+          setStatus("Spotify login complete.");
           window.history.replaceState({}, document.title, window.location.pathname);
           return;
         }
