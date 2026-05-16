@@ -178,7 +178,7 @@ async function ensureValidAccessToken() {
 
 async function beginLogin() {
   if (!CLIENT_ID) {
-    throw new Error("Missing VITE_SPOTIFY_CLIENT_ID in sdk-react-test/.env.local");
+    throw new Error("Missing VITE_SPOTIFY_CLIENT_ID environment variable.");
   }
 
   const verifier = generateRandomString(64);
